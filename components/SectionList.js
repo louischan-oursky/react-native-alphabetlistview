@@ -61,20 +61,25 @@ class SectionList extends Component {
   }
 
   componentDidMount() {
-    const sectionItem = this.refs.sectionItem0;
-
-    this.measureTimer = setTimeout(() => {
-      sectionItem.measure((x, y, width, height, pageX, pageY) => {
-        //console.log([x, y, width, height, pageX, pageY]);
-        this.measure = {
-          y: pageY,
-          height
-        };
-      })
-    }, 0);
-
+    this.onMeasure();
     //console.log(sectionItem);
   }
+
+  onMeasure() {
+    if (this && this.refs) {
+      const sectionItem = this.refs.sectionItem0;
+      this.measureTimer = setTimeout(() => {
+        sectionItem.measure((x, y, width, height, pageX, pageY) => {
+          //console.log([x, y, width, height, pageX, pageY]);
+          this.measure = {
+            y: pageY,
+            height
+          };
+        })
+      }, 0);
+    }
+  }
+
   componentWillUnmount() {
     this.measureTimer && clearTimeout(this.measureTimer);
   }
@@ -125,6 +130,7 @@ class SectionList extends Component {
         onResponderGrant={this.detectAndScrollToSection}
         onResponderMove={this.detectAndScrollToSection}
         onResponderRelease={this.resetSection}
+        onLayout={()=>{this.onMeasure()}}
       >
         {sections}
       </View>
