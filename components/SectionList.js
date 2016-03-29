@@ -68,14 +68,54 @@ class SectionList extends Component {
     //console.log(sectionItem);
   }
 
+  measureViews(views) {
+    const p = views.map((v) => {
+      return new Promise((resolve) => {
+        this.measureView(v).then(resolve);
+      });
+    });
+    return Promise.all(p);
+  }
+
+  measureView(view) {
+    const measure = new Promise((resolve) => {
+      setTimeout(() => {
+        view.measure((x, y, width, height, pageX, pageY) => {
+          resolve({ x, y, width, height, pageX, pageY });
+        });
+      }, 0);
+    });
+    const measureLayout = new Promise((resolve) => {
+      if (view === this.refs.view) {
+        resolve({ x: 0, y: 0 });
+        return;
+      }
+      setTimeout(() => {
+        view.measureLayout(React.findNodeHandle(this.refs.view), (x, y) => {
+          resolve({ x, y });
+        });
+      }, 0);
+    });
+    return new Promise((resolve) => {
+      Promise.all([ measure, measureLayout ]).then((v) => {
+        resolve({ ...v[0], x: v[1].x, y: v[1].y });
+      });
+    });
+  }
+
   onMeasure() {
     if (this && this.refs) {
-      const sectionItem = this.refs.sectionItem0;
-      this.measureTimer = setTimeout(() => {
-        sectionItem.measure((x, y, width, height, pageX, pageY) => {
-          //console.log([x, y, width, height, pageX, pageY]);
-          if (y < 0) {
-            pageY = -y + pageY;
+      this.measureViews([ this.refs.view, this.refs.sectionItem0 ])
+        .then((layouts) => {
+          const view = layouts[0];
+          const sectionItem0 = layouts[1];
+
+          const isTopHidden =
+            sectionItem0.height * this.props.sections.length > view.height;
+
+          let pageY = sectionItem0.pageY;
+          if (isTopHidden) {
+            pageY = -sectionItem0.y + pageY;
             this.setState({
               justifyContent: "flex-start",
             });
@@ -86,11 +126,9 @@ class SectionList extends Component {
           }
           this.measure = {
             y: pageY,
-            height
+            height: sectionItem0.height
           };
-
-        })
-      }, 0);
+        });
     }
   }
 
